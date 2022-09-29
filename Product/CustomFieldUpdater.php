@@ -105,6 +105,11 @@ class CustomFieldUpdater implements EventSubscriberInterface
                 return [
                     'type' => 'text',
                 ];
+            case CustomFieldTypes::PRICE:
+                return [
+                    'type' => 'object',
+                    'dynamic' => true,
+                ];
             case CustomFieldTypes::COLORPICKER:
             case CustomFieldTypes::ENTITY:
             case CustomFieldTypes::MEDIA:
