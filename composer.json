@@ -33,12 +33,13 @@
         "ext-curl": "*",
         "doctrine/dbal": "^3.5",
         "opensearch-project/opensearch-php": "~2.0",
-        "shopware/core": "*",
+        "shopware/core": "v6.5.0.0-rc1@RC",
         "shyim/opensearch-php-dsl": "~1.0.1",
         "symfony/http-foundation": "~6.2.0",
         "symfony/messenger": "~6.2.0"
     },
     "require-dev": {
         "phpunit/phpunit": "~9.5.17"
-    }
+    },
+    "version": "6.5.0.0-rc1"
 }
