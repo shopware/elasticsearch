@@ -34,7 +34,7 @@
         "doctrine/dbal": "^3.6",
         "monolog/monolog": "~3.3.1",
         "opensearch-project/opensearch-php": "~2.0",
-        "shopware/core": "*",
+        "shopware/core": "v6.5.3.2",
         "shyim/opensearch-php-dsl": "~1.0.1",
         "symfony/http-foundation": "~6.3.0",
         "symfony/messenger": "~6.3.0"
