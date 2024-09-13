@@ -49,6 +49,14 @@ class TokenQueryBuilder
         $definition = $this->definitionRegistry->getByEntityName($entity);
 
         foreach ($configs as $config) {
+            $tokenCount = \count(\explode(' ', $token));
+
+            // boost the ranking if the token contains multiple words
+            if ($tokenCount > 1) {
+                $config = clone $config;
+                $config->setRanking((float) $config->getRanking() * $tokenCount);
+            }
+
             $field = EntityDefinitionQueryHelper::getField($config->getField(), $definition, $definition->getEntityName(), false);
             $fieldDefinition = EntityDefinitionQueryHelper::getAssociatedDefinition($definition, $config->getField());
             $real = $field instanceof TranslatedField ? EntityDefinitionQueryHelper::getTranslatedField($fieldDefinition, $field) : $field;
@@ -95,24 +103,37 @@ class TokenQueryBuilder
             $queries = [];
 
             $searchField = $config->getField() . '.search';
-            $ngramField = $config->getField() . '.ngram';
+            $operator = $config->isAndLogic() ? 'and' : 'or';
 
-            // Exact match
-            $queries[] = new MatchQuery($searchField, $token, ['boost' => 5 * $config->getRanking(), 'fuzziness' => 0]);
+            $tokenCount = \count(\explode(' ', $token));
+
+            $queries[] = new MatchQuery($searchField, $token, [
+                'boost' => $config->getRanking(),
+                'fuzziness' => 'auto',
+                'operator' => $operator,
+            ]);
+
             // Prefix match
-            $queries[] = new MatchPhrasePrefixQuery($searchField, $token, ['boost' => 4 * $config->getRanking(), 'slop' => 3, 'max_expansions' => 10]);
+            $queries[] = new MatchPhrasePrefixQuery($searchField, $token, [
+                'boost' => 0.6 * $config->getRanking(),
+                'slop' => 3,
+                'max_expansions' => 10,
+            ]);
 
-            if ($config->tokenize()) {
-                // fuzziness auto
-                $queries[] = new MatchQuery($searchField, $token, ['boost' => 3 * $config->getRanking(), 'fuzziness' => 'auto']);
+            if ($config->tokenize() && $tokenCount === 1) {
                 // ngram search
-                $queries[] = new MatchQuery($ngramField, $token, ['boost' => 2 * $config->getRanking()]);
-            } else {
-                // allow low fuzziness for typo correction
-                $queries[] = new MatchQuery($searchField, $token, ['boost' => 3 * $config->getRanking(), 'fuzziness' => 1]);
+                $queries[] = new MatchQuery($config->getField() . '.ngram', $token, [
+                    'boost' => 0.4 * $config->getRanking(),
+                ]);
             }
 
-            return new BoolQuery([BoolQuery::SHOULD => $queries]);
+            $dismax = new DisMaxQuery();
+
+            foreach ($queries as $query) {
+                $dismax->addQuery($query);
+            }
+
+            return $dismax;
         }
 
         if ($field instanceof IntField || $field instanceof FloatField || $field instanceof PriceField) {
@@ -123,7 +144,7 @@ class TokenQueryBuilder
             $token = $field instanceof IntField ? (int) $token : (float) $token;
         }
 
-        return new TermQuery($config->getField(), $token, ['boost' => 5 * $config->getRanking()]);
+        return new TermQuery($config->getField(), $token, ['boost' => $config->getRanking()]);
     }
 
     /**
