@@ -290,6 +290,10 @@ class ElasticsearchIndexer
             $documents[] = ['delete' => ['_id' => $id]];
         }
 
+        if ($documents === []) {
+            return;
+        }
+
         $arguments = [
             'index' => $index,
             'body' => $documents,
